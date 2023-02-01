@@ -5,11 +5,16 @@ const todoListContainer = document.getElementById('todo-list-container');
 const addTaskInput = document.getElementById('add-task-input');
 const orderTaskButtons = document.querySelectorAll('#ordertask-button');
 
-let allTasksList = document.querySelectorAll("#todolist-list");
+let allTasksArray = [];
 let taskIDToUpdate = "";
 
-const updateTaskList = () => {
-    allTasksList = document.querySelectorAll("#todolist-list")
+const reRenderListDOM = () => {
+    todoListContainer.innerHTML = "";
+    allTasksArray.forEach(task => addNewTask(task.task, task.id));
+}
+
+const findIndexFromID = (task_id="") => {
+    return allTasksArray.findIndex(task => task.id === task_id);
 }
 
 const onTaskNodeNotFoundError = (errorType) => {
@@ -33,7 +38,7 @@ const toggleUpdateAndAdd = () => {
 }
 
 const updateLocalStorage = () => {
-    localStorage.todos = Object.keys(allTasksList).map(id => allTasksList[id].querySelector('#todolist-task').innerText);
+    localStorage.todos = JSON.stringify(allTasksArray);
 }
 
 const resetTaskInput = () => addTaskInput.value = "";
@@ -51,7 +56,8 @@ const onDeleteTask = (e) => {
 
 const onEditTask = (e) => {
     e.preventDefault();
-    editTask(e.currentTarget.dataset.task_id);
+    if(updateTaskButton.dataset.isVisible === "false")
+        editTask(e.currentTarget.dataset.task_id);
 }
 
 const onUpdateTask = (e) => {
@@ -65,19 +71,19 @@ const onOrderTask = (e) => {
     orderTasks(e);
 }
 
-const addNewTask = (task = "") => {
+
+const addNewTask = (task = "", taskIDToAssign = "") => {
     if(task.length <= 0) {
         alert('Please fill the input field before submitting.');
         console.error('Task failed! No input given.');
         return;
     } 
 
-    const task_id = crypto.randomUUID();
+    const task_id = taskIDToAssign.length > 0 ? taskIDToAssign : crypto.randomUUID();
     const newTaskContainer = document.createElement('li');
     newTaskContainer.classList.add('todolist--list-wrapper');
     newTaskContainer.id = "todolist-list";
     newTaskContainer.dataset.task_id = task_id;
-    newTaskContainer.dataset.createdAt = (new Date()).toLocaleDateString();
 
     const newTask = document.createElement('div');
     const newTaskText = document.createTextNode(task);
@@ -88,7 +94,10 @@ const addNewTask = (task = "") => {
     newTaskContainer.appendChild(newTask);
     addUtilsButton(newTaskContainer, task_id);
     todoListContainer.appendChild(newTaskContainer);
-    updateTaskList();
+
+    if(findIndexFromID(task_id) === -1)
+        allTasksArray.push({ id: task_id, task, createdAt: (new Date()).toLocaleDateString() }); // add element to the array
+
     updateLocalStorage();
 }
 
@@ -128,9 +137,10 @@ const deleteTask = (task_id) => {
         onTaskNodeNotFoundError('Deleting');
         return;
     }
-    const findNodeToDelete = Object.keys(allTasksList).filter(id => allTasksList[id].dataset.task_id === task_id);
-    const deletedNode = todoListContainer.removeChild(allTasksList[findNodeToDelete[0]]);
-    updateTaskList();
+
+    allTasksArray = allTasksArray.filter(task => task.id !== task_id); // remove element from array
+    todoListContainer.innerHTML = "";
+    reRenderListDOM();
     updateLocalStorage();
 }
 
@@ -141,9 +151,9 @@ const editTask = (task_id) => {
     }
     toggleUpdateAndAdd();
     taskIDToUpdate = task_id;
-    const findNodeToEditWrapper = Object.keys(allTasksList).filter(id => allTasksList[id].dataset.task_id === task_id);
-    const findNodeToEdit = allTasksList[findNodeToEditWrapper[0]].querySelector('#todolist-task');
-    addTaskInput.value = findNodeToEdit.innerText;
+
+    const taskToEdit = allTasksArray[findIndexFromID(task_id)].task;
+    addTaskInput.value = taskToEdit;
 }
 
 const updateTask = (task_id = taskIDToUpdate) => {
@@ -152,12 +162,10 @@ const updateTask = (task_id = taskIDToUpdate) => {
         return;
     }
     toggleUpdateAndAdd();
-    const findNodeToEditWrapper = Object.keys(allTasksList).filter(id => allTasksList[id].dataset.task_id === task_id);
-    const findNodeToEdit = allTasksList[findNodeToEditWrapper[0]].querySelector('#todolist-task');
-    findNodeToEdit.innerHTML = "";
-    const updateTask = document.createTextNode(addTaskInput.value);
-    findNodeToEdit.appendChild(updateTask);
-    updateTaskList();
+    const indexToUpdate = findIndexFromID(task_id);
+    allTasksArray[indexToUpdate] = { id: task_id, task: addTaskInput.value, createdAt: allTasksArray[indexToUpdate].createdAt };
+
+    reRenderListDOM(); // resets the list DOM
     updateLocalStorage();
 }
 
@@ -165,53 +173,49 @@ const orderTasks = (e) => {
     const orderBy = e.currentTarget.dataset.orderBy;
     todoListContainer.innerText = ""
     
-    allTasksList = sorter(orderBy);
-
-    Object.keys(allTasksList).forEach(id => {
-        const taskText = allTasksList[id].querySelector('#todolist-task').innerText;
-        setTimeout(() => addNewTask(taskText), 100);
-    });
-}
-
-const sorter = (orderBy) => {
-
-    let sortedTasksIndices = [];
-
     switch(orderBy) {
-        case 'creationDateAsc': {
-            sortedTasksIndices = Object.keys(allTasksList).sort((id_one, id_two) => {
-                if(allTasksList[id_one].dataset.createdAt < allTasksList[id_two].dataset.createdAt) return -1;
-                else if(allTasksList[id_one].dataset.createdAt > allTasksList[id_two].dataset.createdAt) return 1;
-                return 0;
-            });
+        case 'creationDateAsc': {   
+            sorter('ASC', 'createdAt');
             break;
         }
         case 'creationDateDsc': {
-            sortedTasksIndices = Object.keys(allTasksList).sort((id_one, id_two) => {
-                if(allTasksList[id_one].dataset.createdAt > allTasksList[id_two].dataset.createdAt) return -1;
-                else if(allTasksList[id_one].dataset.createdAt < allTasksList[id_two].dataset.createdAt) return 1;
-                return 0;
-            });
+            sorter('DSC', 'createdAt');
             break;
         }
         case 'textAsc': {
-            sortedTasksIndices = Object.keys(allTasksList).sort((id_one, id_two) => {
-                if(allTasksList[id_one].querySelector('#todolist-task').innerText < allTasksList[id_two].querySelector('#todolist-task').innerText) return -1;
-                if(allTasksList[id_one].querySelector('#todolist-task').innerText > allTasksList[id_two].querySelector('#todolist-task').innerText) return 1;
+            sorter('ASC', 'task');
+            break;
+        }
+        case 'textDsc': {
+            sorter('DSC', 'task');
+            break;
+        }
+    }
+
+    reRenderListDOM(); // resets the list DOM
+}
+
+const sorter = (orderIn, orderKey) => {
+    switch(orderIn) {
+        case 'ASC': {
+            allTasksArray.sort((task_a, task_b) => {
+                const temp_a = task_a[orderKey].toLowerCase(), temp_b = task_b[orderKey].toLowerCase();
+                if(temp_a < temp_b) return -1; 
+                else if(temp_a > temp_b) return 1;
                 return 0;
             })
             break;
         }
-        case 'textDsc': {
-            sortedTasksIndices = Object.keys(allTasksList).sort((id_one, id_two) => {
-                if(allTasksList[id_one].querySelector('#todolist-task').innerText > allTasksList[id_two].querySelector('#todolist-task').innerText) return -1;
-                if(allTasksList[id_one].querySelector('#todolist-task').innerText < allTasksList[id_two].querySelector('#todolist-task').innerText) return 1;
-                return 1;
+        case 'DSC': {
+            allTasksArray.sort((task_a, task_b) => {
+                const temp_a = task_a[orderKey].toLowerCase(), temp_b = task_b[orderKey].toLowerCase();
+                if(temp_a > temp_b) return -1;
+                else if(temp_a < temp_b) return 1;
+                return 0;
             })
             break;
         }
     }
-    return sortedTasksIndices.map(id => allTasksList[id])
 }
 
 addTaskButton.addEventListener('click', onAddTask);
@@ -219,7 +223,8 @@ updateTaskButton.addEventListener('click', onUpdateTask);
 
 window.addEventListener('load', () => {
     if(localStorage.todos.length <= 0) return;
-    localStorage.todos.split(',').forEach(task => addNewTask(task));
+    allTasksArray = [...JSON.parse(localStorage.todos)];
+    reRenderListDOM();
 })
 
 Object.keys(orderTaskButtons).forEach(id => orderTaskButtons[id].addEventListener('click', onOrderTask));
