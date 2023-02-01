@@ -3,6 +3,7 @@ const addTaskButton = document.getElementById('add-task-button');
 const updateTaskButton = document.getElementById('update-task-button');
 const todoListContainer = document.getElementById('todo-list-container');
 const addTaskInput = document.getElementById('add-task-input');
+const orderTaskButtons = document.querySelectorAll('#ordertask-button');
 
 let allTasksList = document.querySelectorAll("#todolist-list");
 let taskIDToUpdate = "";
@@ -59,6 +60,11 @@ const onUpdateTask = (e) => {
     resetTaskInput();
 }
 
+const onOrderTask = (e) => {
+    e.preventDefault();
+    orderTasks(e);
+}
+
 const addNewTask = (task = "") => {
     if(task.length <= 0) {
         alert('Please fill the input field before submitting.');
@@ -71,6 +77,7 @@ const addNewTask = (task = "") => {
     newTaskContainer.classList.add('todolist--list-wrapper');
     newTaskContainer.id = "todolist-list";
     newTaskContainer.dataset.task_id = task_id;
+    newTaskContainer.dataset.createdAt = (new Date()).toLocaleDateString();
 
     const newTask = document.createElement('div');
     const newTaskText = document.createTextNode(task);
@@ -154,6 +161,59 @@ const updateTask = (task_id = taskIDToUpdate) => {
     updateLocalStorage();
 }
 
+const orderTasks = (e) => {
+    const orderBy = e.currentTarget.dataset.orderBy;
+    todoListContainer.innerText = ""
+    
+    allTasksList = sorter(orderBy);
+
+    Object.keys(allTasksList).forEach(id => {
+        const taskText = allTasksList[id].querySelector('#todolist-task').innerText;
+        setTimeout(() => addNewTask(taskText), 100);
+    });
+}
+
+const sorter = (orderBy) => {
+
+    let sortedTasksIndices = [];
+
+    switch(orderBy) {
+        case 'creationDateAsc': {
+            sortedTasksIndices = Object.keys(allTasksList).sort((id_one, id_two) => {
+                if(allTasksList[id_one].dataset.createdAt < allTasksList[id_two].dataset.createdAt) return -1;
+                else if(allTasksList[id_one].dataset.createdAt > allTasksList[id_two].dataset.createdAt) return 1;
+                return 0;
+            });
+            break;
+        }
+        case 'creationDateDsc': {
+            sortedTasksIndices = Object.keys(allTasksList).sort((id_one, id_two) => {
+                if(allTasksList[id_one].dataset.createdAt > allTasksList[id_two].dataset.createdAt) return -1;
+                else if(allTasksList[id_one].dataset.createdAt < allTasksList[id_two].dataset.createdAt) return 1;
+                return 0;
+            });
+            break;
+        }
+        case 'textAsc': {
+            sortedTasksIndices = Object.keys(allTasksList).sort((id_one, id_two) => {
+                if(allTasksList[id_one].querySelector('#todolist-task').innerText < allTasksList[id_two].querySelector('#todolist-task').innerText) return -1;
+                if(allTasksList[id_one].querySelector('#todolist-task').innerText > allTasksList[id_two].querySelector('#todolist-task').innerText) return 1;
+                return 0;
+            })
+            break;
+        }
+        case 'textDsc': {
+            sortedTasksIndices = Object.keys(allTasksList).sort((id_one, id_two) => {
+                if(allTasksList[id_one].querySelector('#todolist-task').innerText > allTasksList[id_two].querySelector('#todolist-task').innerText) return -1;
+                if(allTasksList[id_one].querySelector('#todolist-task').innerText < allTasksList[id_two].querySelector('#todolist-task').innerText) return 1;
+                return 1;
+            })
+            break;
+        }
+    }
+    return sortedTasksIndices.map(id => allTasksList[id])
+}
+
 addTaskButton.addEventListener('click', onAddTask);
 updateTaskButton.addEventListener('click', onUpdateTask);
 
@@ -161,3 +221,5 @@ window.addEventListener('load', () => {
     if(localStorage.todos.length <= 0) return;
     localStorage.todos.split(',').forEach(task => addNewTask(task));
 })
+
+Object.keys(orderTaskButtons).forEach(id => orderTaskButtons[id].addEventListener('click', onOrderTask));
