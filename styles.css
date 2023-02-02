@@ -110,3 +110,22 @@ body {
 .delete-task--button {
     --primary: #f55050;
 }
+
+
+.addtask--order-wrapper {
+    padding: 0 2rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.order-button {
+    --primary: #f9f9f9;
+    color: #000;
+    border: 1px solid var(--green-1);
+}
+
+.order-button:hover {
+    color: #fff;
+    --primary: var(--green-1);
+}
