@@ -16,12 +16,18 @@
             <div id="form-inner-container" class="addtask--inner-container">
                 <label for="add-task-input" class="addtask--label sr-only">Task: </label>
                 <input type="text" id="add-task-input" name="add-task-input" class="addtask--input primary-input" placeholder="Meeting at 11:00 AM..." title="Type your task here">
-            </div> 
+            </div>
             <div id="add-task-button-container" class="addtask--container">
                 <button type="submit" id="add-task-button" class="addtask--button primary-button m" title="Click to add task" data-is-visible="true">Add Task</button>
                 <button type="submit" id="update-task-button" class="updatetask--button primary-button" title="Click to add task" data-is-visible="false">Update Task</button>
             </div>
         </form>
+        <div id="addtask-order-wrapper" class="addtask--order-wrapper">
+            <button id="ordertask-button" class="ordertask--created-asc primary-button order-button" data-order-by="creationDateAsc">Creation Date - ASC</button>
+            <button id="ordertask-button" class="ordertask--created-dsc primary-button order-button" data-order-by="creationDateDsc">Creation Date - DSC</button>
+            <button id="ordertask-button" class="ordertask--letter-asc primary-button order-button" data-order-by="textAsc">Text - ASC</button>
+            <button id="ordertask-button" class="ordertask--letter-asc primary-button order-button" data-order-by="textDsc">Text - DSC</button>
+        </div> 
         <ul id="todo-list-container" class="todolist--container">
         </ul>
     </main>
