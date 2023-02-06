@@ -7,9 +7,11 @@ const orderTaskButtons = document.querySelectorAll('#ordertask-button');
 
 let allTasksArray = [];
 let taskIDToUpdate = "";
+let endIndex = -1;
 
 const reRenderListDOM = () => {
     todoListContainer.innerHTML = "";
+    // while(todoListContainer.firstChild) todoListContainer.removeChild(todoListContainer.firstChild);
     allTasksArray.forEach(task => addNewTask(task.task, task.id));
 }
 
@@ -71,6 +73,21 @@ const onOrderTask = (e) => {
     orderTasks(e);
 }
 
+const onDragOver = (e) =>  {
+    e.preventDefault();
+}
+
+const onDrop = (e) => {
+    endIndex = findIndexFromID(e.currentTarget.dataset.task_id);
+}
+
+const onDragEnd = (e) => {
+    const targetIndex = findIndexFromID(e.target.dataset.task_id);
+    const taskToOrder = allTasksArray[targetIndex];
+    allTasksArray = allTasksArray.filter(task => task.id !== e.target.dataset.task_id);
+    allTasksArray = [...allTasksArray.slice(0, endIndex), taskToOrder, ...allTasksArray.slice(endIndex)];
+    reRenderListDOM();
+}
 
 const addNewTask = (task = "", taskIDToAssign = "") => {
     if(task.length <= 0) {
@@ -90,6 +107,11 @@ const addNewTask = (task = "", taskIDToAssign = "") => {
     newTask.classList.add('todolist--task');
     newTask.id = 'todolist-task';
     newTask.appendChild(newTaskText);
+
+    newTaskContainer.draggable = "true";
+    newTaskContainer.addEventListener('dragend', onDragEnd);
+    newTaskContainer.addEventListener('dragover', onDragOver);
+    newTaskContainer.addEventListener('drop', onDrop);
 
     newTaskContainer.appendChild(newTask);
     addUtilsButton(newTaskContainer, task_id);
