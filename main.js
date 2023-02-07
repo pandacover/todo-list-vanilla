@@ -3,7 +3,8 @@ const addTaskButton = document.getElementById('add-task-button');
 const updateTaskButton = document.getElementById('update-task-button');
 const todoListContainer = document.getElementById('todo-list-container');
 const addTaskInput = document.getElementById('add-task-input');
-const orderTaskButtons = document.querySelectorAll('#ordertask-button');
+const orderTaskSelection = document.getElementById('addtask-order-selection')
+
 
 let allTasksArray = [];
 let taskIDToUpdate = "";
@@ -11,7 +12,6 @@ let endIndex = -1;
 
 const reRenderListDOM = () => {
     todoListContainer.innerHTML = "";
-    // while(todoListContainer.firstChild) todoListContainer.removeChild(todoListContainer.firstChild);
     allTasksArray.forEach(task => addNewTask(task.task, task.id));
 }
 
@@ -23,20 +23,17 @@ const onTaskNodeNotFoundError = (errorType) => {
     console.error(`No task node found! ${errorType} error.`)
 }
 
-const toggleUpdateAndAdd = () => {
-    switch(addTaskButton.dataset.isVisible) {
-        case "true": {
-            addTaskButton.dataset.isVisible = "false";
-            updateTaskButton.dataset.isVisible = "true";
-            break;
-        }
-        case "false": {
-            addTaskButton.dataset.isVisible = "true";
-            updateTaskButton.dataset.isVisible = "false";
-            break;
-        }
-        default: console.error('Invalid toggle type.');
-    }
+const toggleEditAndUpdate = (replaceFrom, replaceTo) => {
+    replaceFrom.replaceWith(replaceTo);
+}
+
+const createUpdateButton = () => {
+    const updateTaskButton = document.createElement('button');
+    const updateTaskText = document.createTextNode('Update Task');
+    updateTaskButton.appendChild(updateTaskText);
+    updateTaskButton.id = "update-task-button";
+    updateTaskButton.classList.add('update--task-button', 'primary-button');
+    return updateTaskButton;
 }
 
 const updateLocalStorage = () => {
@@ -58,18 +55,16 @@ const onDeleteTask = (e) => {
 
 const onEditTask = (e) => {
     e.preventDefault();
-    if(updateTaskButton.dataset.isVisible === "false")
-        editTask(e.currentTarget.dataset.task_id);
+    editTask(e.currentTarget.dataset.task_id, e);
 }
 
-const onUpdateTask = (e) => {
+const onUpdateTask = (e, task_id) => {
     e.preventDefault();
-    updateTask();
+    updateTask(task_id);
     resetTaskInput();
 }
 
 const onOrderTask = (e) => {
-    e.preventDefault();
     orderTasks(e);
 }
 
@@ -166,16 +161,27 @@ const deleteTask = (task_id) => {
     updateLocalStorage();
 }
 
-const editTask = (task_id) => {
+const editTask = (task_id, e) => {
     if(!task_id) {
         onTaskNodeNotFoundError('Editing');
         return;
     }
-    toggleUpdateAndAdd();
-    taskIDToUpdate = task_id;
+    const toggledInputElement = document.createElement('input');
+    const indexToEdit = findIndexFromID(task_id)
 
-    const taskToEdit = allTasksArray[findIndexFromID(task_id)].task;
-    addTaskInput.value = taskToEdit;
+    toggledInputElement.id = task_id;
+    toggledInputElement.classList.add('updatetask--input')
+    toggledInputElement.type = "text";
+    toggledInputElement.value = allTasksArray[indexToEdit].task;
+    toggledInputElement.placeholder = allTasksArray[indexToEdit].task;
+
+    const todos = todoListContainer.querySelectorAll('li');
+    const targetToEdit = todos[Object.keys(todos).findIndex(id => todos[id].dataset.task_id === task_id.toString())]
+    targetToEdit.firstChild.replaceWith(toggledInputElement);
+
+    const updateTaskButton = createUpdateButton();
+    updateTaskButton.addEventListener('click', (e) => onUpdateTask(e, task_id));
+    toggleEditAndUpdate(e.target, updateTaskButton);
 }
 
 const updateTask = (task_id = taskIDToUpdate) => {
@@ -183,16 +189,18 @@ const updateTask = (task_id = taskIDToUpdate) => {
         onTaskNodeNotFoundError('Editing');
         return;
     }
-    toggleUpdateAndAdd();
+    const todos = todoListContainer.querySelectorAll('li');
+    const targetToEdit = todos[Object.keys(todos).findIndex(id => todos[id].dataset.task_id === task_id.toString())]
     const indexToUpdate = findIndexFromID(task_id);
-    allTasksArray[indexToUpdate] = { id: task_id, task: addTaskInput.value, createdAt: allTasksArray[indexToUpdate].createdAt };
+
+    allTasksArray[indexToUpdate] = { id: task_id, task: targetToEdit.firstChild.value, createdAt: allTasksArray[indexToUpdate].createdAt };
 
     reRenderListDOM(); // resets the list DOM
     updateLocalStorage();
 }
 
 const orderTasks = (e) => {
-    const orderBy = e.currentTarget.dataset.orderBy;
+    const orderBy = e.currentTarget.value;
     todoListContainer.innerText = ""
     
     switch(orderBy) {
@@ -240,8 +248,7 @@ const sorter = (orderIn, orderKey) => {
     }
 }
 
-addTaskButton.addEventListener('click', onAddTask);
-updateTaskButton.addEventListener('click', onUpdateTask);
+addTaskButton.addEventListener('click', onAddTask);updateTaskButton.addEventListener('click', onUpdateTask);
 
 window.addEventListener('load', () => {
     if(localStorage.todos.length <= 0) return;
@@ -249,4 +256,4 @@ window.addEventListener('load', () => {
     reRenderListDOM();
 })
 
-Object.keys(orderTaskButtons).forEach(id => orderTaskButtons[id].addEventListener('click', onOrderTask));
+Object.keys(orderTaskSelection.options).forEach(index =>  orderTaskSelection.options[index].addEventListener('click', onOrderTask));
