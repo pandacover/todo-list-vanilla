@@ -1,9 +1,10 @@
 const addTaskForm = document.getElementById('form-add-task');
 const addTaskButton = document.getElementById('add-task-button');
-const updateTaskButton = document.getElementById('update-task-button');
 const todoListContainer = document.getElementById('todo-list-container');
 const addTaskInput = document.getElementById('add-task-input');
 const orderTaskSelection = document.getElementById('addtask-order-selection')
+
+const sourceURL = "https://jsonplaceholder.typicode.com/todos";
 
 
 let allTasksArray = [];
@@ -12,7 +13,7 @@ let endIndex = -1;
 
 const reRenderListDOM = () => {
     todoListContainer.innerHTML = "";
-    allTasksArray.forEach(task => addNewTask(task.task, task.id));
+    allTasksArray.forEach(task => addNewTask(task.task, task.id) );
 }
 
 const findIndexFromID = (task_id="") => {
@@ -37,7 +38,7 @@ const createUpdateButton = () => {
 }
 
 const updateLocalStorage = () => {
-    localStorage.todos = JSON.stringify(allTasksArray);
+    localStorage.todos = JSON.stringify([...allTasksArray]);
 }
 
 const resetTaskInput = () => addTaskInput.value = "";
@@ -248,12 +249,24 @@ const sorter = (orderIn, orderKey) => {
     }
 }
 
-addTaskButton.addEventListener('click', onAddTask);updateTaskButton.addEventListener('click', onUpdateTask);
+addTaskButton.addEventListener('click', onAddTask);
 
 window.addEventListener('load', () => {
-    if(localStorage.todos.length <= 0) return;
-    allTasksArray = [...JSON.parse(localStorage.todos)];
-    reRenderListDOM();
+    if(!localStorage.todos || JSON.parse(localStorage.todos).length <= 0) {
+        const createdAt = (new Date()).toLocaleDateString();
+        fetch(sourceURL).then(res => res.json()).then(task => {
+            for(let i = 0; i < 10; ++i) allTasksArray.push({ id: task[i].id.toString(), task: task[i].title, createdAt });
+            reRenderListDOM();
+        })
+    }
+    else {
+        allTasksArray = [...JSON.parse(localStorage.todos)];
+        reRenderListDOM();
+    }
 })
 
 Object.keys(orderTaskSelection.options).forEach(index =>  orderTaskSelection.options[index].addEventListener('click', onOrderTask));
+
+
+
+// const promise = new Promise();
